@@ -1,8 +1,16 @@
 import { createServer } from "http";
+import crypto from "crypto";
 
 const PORT = 1337;
 const WEBSOCKET_MAGIC_STRING_KEY = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11";
-import crypto from "crypto";
+const SEVEN_BITS_INTEGER_MARKER = 125;
+const SIXTEEN_BITS_INTEGER_MARKER = 126;
+const SIXTYFOUR_BITS_INTEGER_MARKER = 127;
+
+const MASK_KEY_BYTES_LENGTH = 4;
+
+// parseInt("10000000") = 128
+const FIRST_BIT = 128;
 
 const server = createServer((req, res) => {
   res.writeHead(200);
@@ -18,6 +26,29 @@ function onSocketUpgrade(req, socket, head) {
   const headers = prepareHandShakeHeaders(webClientSocketKey);
 
   socket.write(headers);
+  socket.on("readable", () => onSocketReadable(socket));
+}
+
+function onSocketReadable(socket) {
+  // consume optcode (first byte)
+  // 1 - 1 byte - 8bits
+  socket.read(1);
+
+  const [markerAndPayloadLength] = socket.read(1);
+  // Because the first bit is always 1 for client-to-server messages
+  // you can subtract 1 bit (128 or 10000000)
+  // from this byte to get rid of the MASK bit
+  const lengthIndicatorInBits = markerAndPayloadLength - FIRST_BIT;
+
+  let messageLength = 0;
+  if (lengthIndicatorInBits <= SEVEN_BITS_INTEGER_MARKER) {
+    messageLength = lengthIndicatorInBits;
+  } else {
+    throw new Error(`Your message is too long! We don't handle 64-bit message`);
+  }
+
+  const maskKey = socket.read(MASK_KEY_BYTES_LENGTH);
+  const encoded = socket.read(messageLength);
 }
 
 function prepareHandShakeHeaders(id) {
