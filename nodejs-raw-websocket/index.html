@@ -14,19 +14,43 @@
         console.log("WebSocket is connected!");
         const id = Math.round(Math.random() * 100);
         console.log("sending...", id);
-        const data = JSON.stringify({
-          id,
-          name: `[${id}] Lam Nguyen`,
-          address: {
-            street: "my street",
-            number: 20 * id,
+        const data = JSON.stringify([
+          {
+            id,
+            name: `[${id}] Lam Nguyen`,
+            address: {
+              street: "my street",
+              number: 20 * id,
+            },
+            profession: "developer",
           },
-          profession: "developer",
-        });
+          {
+            id,
+            name: `[${id}] Lam Nguyen`,
+            address: {
+              street: "my street",
+              number: 20 * id,
+            },
+            profession: "developer",
+          },
+          {
+            id,
+            name: `[${id}] Lam Nguyen`,
+            address: {
+              street: "my street",
+              number: 20 * id,
+            },
+            profession: "developer",
+          },
+        ]);
 
         socket.send(data);
       };
-      socket.onmessage = (msg) => console.log("I got a message: ", msg);
+      socket.onmessage = (msg) => {
+        const message = msg.data;
+        console.log("I got a message: ", msg);
+        messages.innerHTML += `<br /> ${message}`;
+      };
       socket.onerror = (error) => console.log("Web Socket error", error);
       socket.onclose = (event) => console.log("Disconnected from Websocket server");
     </script>
